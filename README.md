@@ -3,8 +3,8 @@
 
 ## Участники проекта
 
-* Масляков Глеб
+* [Масляков Глеб](https://github.com/glebmaslyak)
 
-* Николаев Сергей
+* [Николаев Сергей](https://github.com/corvin28)
 
-* Юдин Никита
+* [Юдин Никита](https://github.com/neyudin)
