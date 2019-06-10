@@ -138,16 +138,19 @@ class WaveGlow(nn.Module):
         self.early_every = early_every
         
         # spect upsampling
+        self.spect_upsample = nn.ConvTranspose1d(in_channels=self.mel_channels, out_channels=self.mel_channels,
+                                                 kernel_size=1024, stride=256)
         
         # blocks
         self.invert_conv = nn.ModuleList()
         self.affine_coupling = nn.ModuleList()
+        remaining_channels = num_channels
         for i in range(self.num_blocks):
             if i > 0 and i % self.early_every == 0:
-                num_channels -= self.early_channels
-            self.invert_conv.append(InvertConv(self.num_channels))
-            self.affine_coupling.append(AffineCouplingLayer(self.num_channels // 2, **kwargs)) # размерность спектограммы?
-        self.num_channels_last = num_channels
+                remaining_channels -= self.early_channels
+            self.invert_conv.append(InvertConv(remaining_channels))
+            self.affine_coupling.append(AffineCouplingLayer(remaining_channels // 2, self.mel_channels * self.num_channels, **kwargs))
+        self.num_channels_last = remaining_channels
 
     def forward(x, spect):
         """
@@ -166,12 +169,15 @@ class WaveGlow(nn.Module):
         logdet_w_list : List of FloatTensors of size 1
         """
         # upsample spect
-        # TODO
+        spect = self.spect_upsample(spect)
+        assert spect.size(2) >= x.size(1)
+        if spect.size(2) > x.size(1):
+            spect = spect[:, :, :x.size(1)]
         
         # reshape tensors
         x = x.unfold(dim=1, size=self.num_channels, step=self.num_channels).permute(0, 2, 1)
         spect = spect.unfold(dim=2, size=self.num_channels, step=self.num_channels).permute(0, 2, 1, 3)
-        spect = spect.contiguous().view(spect.size(0), spect.size(1), -1).permute(0, 2, 1) # contiguous?
+        spect = spect.contiguous().view(spect.size(0), spect.size(1), -1).permute(0, 2, 1)
         
         # forward pass
         outputs = []
@@ -190,20 +196,38 @@ class WaveGlow(nn.Module):
         return torch.cat(outputs, dim=1), log_s_list, logdet_w_list
         
     
-    def infer(spect):
+    def infer(spect, sigma=1.0):
         """
         Parameters
         ----------
         spect : FloatTensor of size batch_size * mel_channels * mel_frames
             Mel-spectrogram
+        sigma : float scalar
+            Standart deviation of latent variables
         
         Returns
         ----------
         x : FloatTensor of size batch_size * audio_len
             Audio sample
         """
-        # TODO
-        pass
+        spect = self.spect_upsample(spect)
+        # в статье говорят, что нужно избавиться от артефактов
+        spect = spect[:, :, :-(self.spect_upsample.kernel_size[0] - self.spect_upsample.stride[0])]
+
+        spect = spect.unfold(2, self.num_channels, self.num_channels).permute(0, 2, 1, 3)
+        spect = spect.contiguous().view(spect.size(0), spect.size(1), -1).permute(0, 2, 1)
+
+        x = sigma * torch.randn(spect.size(0), self.num_channels_last, spect.size(2), device=spect.device)
+
+        for i in range(self.num_blocks - 1, -1, -1):
+            x = self.affine_coupling[i](x, spect, reverse=True)
+            x = self.invert_conv[i](x, reverse=True)
+
+            if i > 0 and i % self.early_every == 0:
+                z = sigma * torch.randn(spect.size(0), self.early_channels, spect.size(2), device=spect.device)
+                x = torch.cat([z, x], dim=1)
+
+        return x.permute(0, 2, 1).contiguous().view(x.size(0), -1).data
     
     def compute_loss(x, spect, sigma=1.0):
         """
