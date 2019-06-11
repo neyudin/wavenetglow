@@ -195,7 +195,6 @@ class WaveGlow(nn.Module):
         
         return torch.cat(outputs, dim=1), log_s_list, logdet_w_list
         
-    
     def infer(spect, sigma=1.0):
         """
         Parameters
