@@ -10,6 +10,26 @@ DEFAULT_SCHED_PARAM_DICT = dict()
 
 
 def make_checkpoint(path, model, optimizer, lr, scheduler, iter, verbose=True):
+    """Saves intermediate state of the training procedure into file.
+
+    Parameters
+    ----------
+    path : str
+        Path to save parameters.
+    model : nn.Module
+        Trained model.
+    optimizer : Pytorch Optimizer
+        Model optimizer.
+    lr : float > 0 [scalar]
+        Optimizer's learning rate.
+    scheduler : Pytorch LRScheduler
+        Optimizer's learning rate scheduler.
+    iter : int >= 0 [scalar]
+        Number of the current iteration.
+    verbose : bool, default -- True
+        Whether print auxiliary output.
+
+    """
     torch.save({'model': model.state_dict(),
                 'optimizer': optimizer.state_dict(),
                 'lr': lr,
@@ -22,6 +42,35 @@ def make_checkpoint(path, model, optimizer, lr, scheduler, iter, verbose=True):
 
 
 def load_checkpoint(path, model, optimizer, scheduler, verbose=True):
+    """Loads intermediate state of the training procedure from file.
+
+    Parameters
+    ----------
+    path : str
+        Path to saved parameters.
+    model : nn.Module
+        Trained model.
+    optimizer : Pytorch Optimizer
+        Model optimizer.
+    scheduler : Pytorch LRScheduler
+        Optimizer's learning rate scheduler.
+    verbose : bool, default -- True
+        Whether print auxiliary output.
+
+    Returns
+    -------
+    model : nn.Module
+        Updated trained model.
+    optimizer : Pytorch Optimizer
+        Updated model optimizer.
+    scheduler : Pytorch LRScheduler
+        Updated optimizer's learning rate scheduler.
+    iter : int >= 0 [scalar]
+        Number of the current iteration.
+    lr : float > 0 [scalar]
+        Updated optimizer's learning rate.
+
+    """
     assert os.path.isfile(path)
 
     param_dict = torch.load(path, map_location='cpu')
@@ -46,6 +95,52 @@ def train_cycle(model, model_name, save_dir, criterion, dataset_params, n_epochs
                 optimizer=None, lr=1e-4, scheduler=None, scheduler_state_dict=DEFAULT_SCHED_PARAM_DICT,
                 device='cpu', seed=42, checkpoint_path=None, iter_checkpoint_hop=2000, verbose=True,
                 log_dir=None, exp_smooth_val=0.5):
+    """Main training cycle.
+
+    Parameters
+    ----------
+    model : nn.Module
+         Model to train.
+    model_name : str
+        Model tag.
+    save_dir : str
+        Path to the directory with saved model's checkpoints.
+    criterion : callable
+        Optimization criterion.
+    dataset_params : dict
+        Dictionary with parameters of the MelSpectrogramDataset class. Defines following parameters:
+        `data_dir`, `sr`, `n_fft`, `fmin`, `fmax`, `hop_len`, `win_len`, `seg_len`, `seed`, `shuffle`,
+        max_wav_val`.
+    n_epochs : int > 0 [scalar]
+        Number of the training epochs.
+    batch_size : int > 0 [scalar], default -- 3
+        Size of the batch.
+    optimizer : Pytorch Optimizer, default -- None
+        Model optimizer. If optimizer == None, then Adam optimizer is used.
+    lr : float > 0 [scalar], default -- 1e-4
+        Learning rate.
+    scheduler : Pytorch LRScheduler, default -- None
+        Optimizer's learning rate scheduler. If scheduler == None, then no scheduling.
+    scheduler_state_dict : dict, default -- dict()
+        Pytorch LRScheduler parameters dictionary.
+    device : str, default -- 'cpu'
+        Name of the device where the model is trained. Possible values: 'cpu', 'cuda'.
+    seed : int [scalar]
+        Seed for pseudo random numbers generator.
+    checkpoint_path : str, default -- None
+        Path to initial state of the model. If checkpoint_path == None, then
+        initial state won't be downloaded from the file.
+    iter_checkpoint_hop : int > 0 [scalar], default -- 2000
+        Period length between savings of the model's states.
+    verbose : bool, default -- True
+        Whether print auxiliary messages to stdout.
+    log_dir : str, default -- None
+        Path to the directory to store TensorBoard logs.
+        If log_dir == None,then TensorBoard won't be used.
+    exp_smooth_val : float between 0 and 1, default -- 0.5
+        Exponential smoothing parameter for epoch loss and gradient norm estimation.
+
+    """
     if not (seed is None):
         np.random.seed(seed)
         torch.manual_seed(seed)
