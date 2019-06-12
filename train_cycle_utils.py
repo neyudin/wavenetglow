@@ -110,7 +110,7 @@ def train_cycle(model, model_name, save_dir, criterion, dataset_params, n_epochs
     dataset_params : dict
         Dictionary with parameters of the MelSpectrogramDataset class. Defines following parameters:
         `data_dir`, `sr`, `n_fft`, `fmin`, `fmax`, `hop_len`, `win_len`, `seg_len`, `seed`, `shuffle`,
-        max_wav_val`.
+        `max_wav_val`.
     n_epochs : int > 0 [scalar]
         Number of the training epochs.
     batch_size : int > 0 [scalar], default -- 3

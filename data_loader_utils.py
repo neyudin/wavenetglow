@@ -56,7 +56,7 @@ def get_train_test_paths(paths, test_size=0.3, random_state=517, shuffle=True):
         Test set fraction in range (0, 1).
     random_state : int [scalar], default -- 517
         Seed for pseudo random numbers generator.
-    shuffle : bool
+    shuffle : bool, default -- True
         Whether shuffle the input data set `paths`.
 
     Returns
@@ -95,11 +95,11 @@ class MelSpectrogramDataset(data.Dataset):
         with zeros to match `n_fft`. `n_fft` >= `win_len`.
     seg_len : int > 0 [scalar]
         Length of the sampled audio.
-    seed : int [scalar]
+    seed : int [scalar], default -- 42
         Seed for pseudo random numbers generator.
-    shuffle : bool
+    shuffle : bool, default -- True
         Whether shuffle the input data set `paths`.
-    max_wav_val : int > 0 [scalar]
+    max_wav_val : int > 0 [scalar], default -- 32768
         Maximal amplitude of the .wav audio, used to map signal to [-1, 1] range.
     wav2mel_transformer : callable nn.Module
         Transforms input audio into Mel-spectrogram.
@@ -111,7 +111,30 @@ class MelSpectrogramDataset(data.Dataset):
         """
         Parameters
         ----------
-
+        data_dir : str
+            Path to the directory with .wav files.
+        sr : int > 0 [scalar]
+            Sampling rate of the incoming signal.
+        n_fft : int > 0 [scalar]
+            Number of components in the fast Fourier transform (FFT).
+        fmin : float >= 0 [scalar]
+            Lowest frequency (in Hz).
+        fmax : float >= 0 [scalar]
+            Highest frequency (in Hz).
+        hop_len : int > 0 [scalar]
+            Number audio of frames between STFT columns.
+        win_len : int > 0 [scalar]
+            Each frame of audio is windowed by `hann`.
+            The window will be of length `win_length` and then padded
+            with zeros to match `n_fft`. `n_fft` >= `win_len`.
+        seg_len : int > 0 [scalar]
+            Length of the sampled audio.
+        seed : int [scalar], default -- 42
+            Seed for pseudo random numbers generator.
+        shuffle : bool, default -- True
+            Whether shuffle the input data set `paths`.
+        max_wav_val : int > 0 [scalar], default -- 32768
+            Maximal amplitude of the .wav audio, used to map signal to [-1, 1] range.
 
         """
         self.paths = get_wav_list(data_dir)
