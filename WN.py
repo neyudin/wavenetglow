@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 
+
 class WN(torch.nn.Module):
     """
     Это WaveNet как в статье про WaveGlow
@@ -90,10 +91,9 @@ class WN(torch.nn.Module):
             kernel_size=1)
         self.conv_out_2 = nn.Conv1d(
             in_channels=pre_channels,
-            out_channels=num_channels,
+            out_channels=2 * num_channels,
             kernel_size=1)
-        
-        
+
     def forward(self, x_a, c):
         """
         Parameters
@@ -103,7 +103,7 @@ class WN(torch.nn.Module):
         c : FloatTensor of size batch_size * mel_channels * T
             Upsampled mel-spectrogram
         """
-        assert x_a.size(2) == c.size(2) #Проверить, что спектрограмме не забыли сделать upsampling
+        assert x_a.size(2) == c.size(2)  # Проверить, что спектрограмме не забыли сделать upsampling
         
         x_acc = 0
         x = self.conv_input(x_a)
@@ -120,7 +120,7 @@ class WN(torch.nn.Module):
             if i != len(self.dilations_list) - 1:
                 x_res = self.conv_residual[i](x_filter_gate)
                 x = x + x_res
-                #x = x * 0.5**0.5
+                # x = x * 0.5**0.5
             x_acc = x_acc + x_skip
             
         return self.conv_out_2(torch.relu(self.conv_out_1(x_acc)))

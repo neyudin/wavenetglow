@@ -32,7 +32,7 @@ class InvertConv(nn.Module):
             weight[:, 0] = -weight[:, 0]
         self.conv.weight.data = weight.view(num_channels, num_channels, 1)
 
-    def forward(x, reverse=False):
+    def forward(self, x, reverse=False):
         """
         Parameters
         ----------
@@ -74,9 +74,9 @@ class AffineCouplingLayer(nn.Module):
             
         """
         super(AffineCouplingLayer, self).__init__()
-        self.wn = WN()
+        self.wn = WN(**kwargs)
 
-    def forward(x, spect, reverse=False):
+    def forward(self, x, spect, reverse=False):
         """
         Parameters
         ----------
@@ -152,7 +152,7 @@ class WaveGlow(nn.Module):
             self.affine_coupling.append(AffineCouplingLayer(remaining_channels // 2, self.mel_channels * self.num_channels, **kwargs))
         self.num_channels_last = remaining_channels
 
-    def forward(x, spect):
+    def forward(self, x, spect):
         """
         Parameters
         ----------
@@ -195,7 +195,7 @@ class WaveGlow(nn.Module):
         
         return torch.cat(outputs, dim=1), log_s_list, logdet_w_list
         
-    def infer(spect, sigma=1.0):
+    def infer(self, spect, sigma=1.0):
         """
         Parameters
         ----------
@@ -228,7 +228,7 @@ class WaveGlow(nn.Module):
 
         return x.permute(0, 2, 1).contiguous().view(x.size(0), -1).data
     
-    def compute_loss(x, spect, sigma=1.0):
+    def compute_loss(self, x, spect, sigma=1.0):
         """
         Parameters
         ----------

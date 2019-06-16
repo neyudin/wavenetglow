@@ -10,7 +10,7 @@ DEFAULT_SCHED_PARAM_DICT = dict()
 
 
 class VerboseStringPadding:
-    """Auxiliary tool for inline string printing
+    """Auxiliary tool for inline string printing.
 
     This class helps to print all messages upon each other.
 
