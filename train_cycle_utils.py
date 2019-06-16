@@ -259,11 +259,10 @@ def train_cycle(model, model_name, save_dir, criterion, dataset_params, val_data
 
             model.zero_grad()
 
-            out = model(audio, mel)
-
             if criterion is None:
                 loss = model.compute_loss(audio, mel, sigma=sigma)
             else:
+                out = model(audio, mel)
                 loss = criterion(out)
 
             loss.backward()
