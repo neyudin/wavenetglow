@@ -2,7 +2,7 @@
     "WaveGlow_params": {
         "num_channels": 8,
         "early_channels": 2,
-        "early_every": 4,
+        "early_every": 2,
         "mel_channels": 80,
         "num_blocks": 6
     },
