@@ -7,8 +7,8 @@ class WN(torch.nn.Module):
     Это WaveNet как в статье про WaveGlow
     """
     
-    def __init__(self, num_channels, mel_channels, n_layers=8, residual_channels=512, 
-                 gate_channels=256, skip_channels=256, pre_channels=128):
+    def __init__(self, num_channels, mel_channels, n_layers=4, residual_channels=128,
+                 gate_channels=64, skip_channels=64, pre_channels=32):
         
         """
         Parameters

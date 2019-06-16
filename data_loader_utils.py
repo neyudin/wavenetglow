@@ -181,13 +181,14 @@ class MelSpectrogramDataset(data.Dataset):
 
         assert (self.sr == sr)
 
-        if sound.shape[0] < self.seg_len:
-            sound = F.pad(input=sound,
-                          pad=[0, self.seg_len - sound.shape[0]],
-                          mode='constant')
-        else:
-            start_pos = np.random.randint(0, sound.shape[0] - self.seg_len)
-            sound = sound[start_pos:start_pos + self.seg_len]
+        if self.seg_len > 0:
+            if sound.shape[0] < self.seg_len:
+                sound = F.pad(input=sound,
+                              pad=[0, self.seg_len - sound.shape[0]],
+                              mode='constant')
+            else:
+                start_pos = np.random.randint(0, sound.shape[0] - self.seg_len)
+                sound = sound[start_pos:start_pos + self.seg_len]
 
         with torch.no_grad():
             mel = self.wav2mel_transformer(sound.unsqueeze(0)).squeeze(0)

@@ -25,7 +25,8 @@ class InvertConv(nn.Module):
         """
         super(InvertConv, self).__init__()
         
-        self.conv = nn.Conv1d(in_channels=num_channels, out_channels=num_channels, kernel_size=1, stride=1, padding=0, bias=False)
+        self.conv = nn.Conv1d(in_channels=num_channels, out_channels=num_channels, kernel_size=1, stride=1, padding=0,
+                              bias=False)
         
         weight = torch.qr(torch.randn(num_channels, num_channels))[0]
         if torch.det(weight) < 0:
@@ -149,7 +150,8 @@ class WaveGlow(nn.Module):
             if i > 0 and i % self.early_every == 0:
                 remaining_channels -= self.early_channels
             self.invert_conv.append(InvertConv(remaining_channels))
-            self.affine_coupling.append(AffineCouplingLayer(remaining_channels // 2, self.mel_channels * self.num_channels, **kwargs))
+            self.affine_coupling.append(AffineCouplingLayer(num_channels=remaining_channels // 2,
+                                                            mel_channels=self.mel_channels * self.num_channels, **kwargs))
         self.num_channels_last = remaining_channels
 
     def forward(self, x, spect):
@@ -175,8 +177,8 @@ class WaveGlow(nn.Module):
             spect = spect[:, :, :x.size(1)]
         
         # reshape tensors
-        x = x.unfold(dim=1, size=self.num_channels, step=self.num_channels).permute(0, 2, 1)
-        spect = spect.unfold(dim=2, size=self.num_channels, step=self.num_channels).permute(0, 2, 1, 3)
+        x = x.unfold(dimension=1, size=self.num_channels, step=self.num_channels).permute(0, 2, 1)
+        spect = spect.unfold(dimension=2, size=self.num_channels, step=self.num_channels).permute(0, 2, 1, 3)
         spect = spect.contiguous().view(spect.size(0), spect.size(1), -1).permute(0, 2, 1)
         
         # forward pass

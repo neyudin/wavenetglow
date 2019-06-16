@@ -5,6 +5,8 @@ from data_loader_utils import MelSpectrogramDataset
 import numpy as np
 from tensorboardX import SummaryWriter
 
+from scipy.io.wavfile import write
+
 
 DEFAULT_SCHED_PARAM_DICT = dict()
 
@@ -60,6 +62,7 @@ def make_checkpoint(path, model, optimizer, lr, scheduler, iter, verbose=None):
 
     """
     torch.save({'model': model.state_dict(),
+                'model_class': model,
                 'optimizer': optimizer.state_dict(),
                 'lr': lr,
                 'scheduler': scheduler if scheduler is None else scheduler.state_dict(),
@@ -78,7 +81,7 @@ def load_checkpoint(path, model, optimizer, scheduler, verbose=None):
     path : str
         Path to saved parameters.
     model : nn.Module
-        Trained model.
+        Pytorch model.
     optimizer : Pytorch Optimizer
         Model optimizer.
     scheduler : Pytorch LRScheduler
@@ -104,7 +107,11 @@ def load_checkpoint(path, model, optimizer, scheduler, verbose=None):
 
     param_dict = torch.load(path, map_location='cpu')
 
-    model.load_state_dict(param_dict['model'])
+    if model is None:
+        model = param_dict['model_class']
+        model.load_state_dict(param_dict['model'])
+    else:
+        model.load_state_dict(param_dict['model'])
     optimizer.load_state_dict(param_dict['optimizer'])
     lr = param_dict['lr']
 
@@ -120,11 +127,11 @@ def load_checkpoint(path, model, optimizer, scheduler, verbose=None):
     return model, optimizer, scheduler, iter, lr
 
 
-def train_cycle(model, model_name, save_dir, criterion, dataset_params, n_epochs,
-                stop_iter_num=580000, batch_size=24, sigma=1.0, optimizer=None, lr=1e-4,
-                scheduler=None, scheduler_state_dict=DEFAULT_SCHED_PARAM_DICT, device='cpu',
-                seed=42, checkpoint_path=None, iter_checkpoint_hop=2000, verbose=None,
-                batch_verbose_period=100, log_dir=None, exp_smooth_val=0.5):
+def train_cycle(model, model_name, save_dir, criterion, dataset_params, val_dataset_params, n_epochs,
+                val_sigma=0.6, stop_iter_num=580000, batch_size=24, sigma=1.0, optimizer=None, lr=1e-4,
+                scheduler=None, scheduler_state_dict=DEFAULT_SCHED_PARAM_DICT, max_norm=None,
+                device='cuda', seed=42, checkpoint_path=None, iter_checkpoint_hop=2000,
+                verbose=None, batch_verbose_period=100, log_dir=None, exp_smooth_val=0.4):
     """Main training cycle.
 
     Parameters
@@ -138,11 +145,17 @@ def train_cycle(model, model_name, save_dir, criterion, dataset_params, n_epochs
     criterion : callable
         Optimization criterion.
     dataset_params : dict
-        Dictionary with parameters of the MelSpectrogramDataset class. Defines following parameters:
+        Dictionary with parameters of the MelSpectrogramDataset class for training. Defines following parameters:
+        `data_dir`, `sr`, `n_fft`, `fmin`, `fmax`, `hop_len`, `win_len`, `seg_len`, `seed`, `shuffle`,
+        `max_wav_val`.
+    val_dataset_params: dict
+        Dictionary with parameters of the MelSpectrogramDataset class for validation. Defines following parameters:
         `data_dir`, `sr`, `n_fft`, `fmin`, `fmax`, `hop_len`, `win_len`, `seg_len`, `seed`, `shuffle`,
         `max_wav_val`.
     n_epochs : int > 0 [scalar]
         Number of the training epochs.
+    val_sigma : float > 0 [scalar], default -- 0.6
+        Standard deviation for waveglow inference.
     stop_iter_num : int > 0 [scalar], default -- 580000
         Maximal number of the iteration.
     batch_size : int > 0 [scalar], default -- 24
@@ -157,7 +170,9 @@ def train_cycle(model, model_name, save_dir, criterion, dataset_params, n_epochs
         Optimizer's learning rate scheduler class reference. If scheduler == None, then no scheduling.
     scheduler_state_dict : dict, default -- dict()
         Pytorch LRScheduler parameters dictionary.
-    device : str, default -- 'cpu'
+    max_norm : float > 0, [scalar], default -- None
+        Maximal value of gradient norm. If max_norm != None, then gradient clipping is performed.
+    device : str, default -- 'cuda'
         Name of the device where the model is trained. Possible values: 'cpu', 'cuda'.
     seed : int [scalar]
         Seed for pseudo random numbers generator.
@@ -173,7 +188,7 @@ def train_cycle(model, model_name, save_dir, criterion, dataset_params, n_epochs
     log_dir : str, default -- None
         Path to the directory to store TensorBoard logs.
         If log_dir == None, then TensorBoard won't be used.
-    exp_smooth_val : float between 0 and 1, default -- 0.5
+    exp_smooth_val : float between 0 and 1, default -- 0.4
         Exponential smoothing parameter for epoch loss and gradient norm estimation.
 
     """
@@ -187,12 +202,20 @@ def train_cycle(model, model_name, save_dir, criterion, dataset_params, n_epochs
 
     dataset = MelSpectrogramDataset(**dataset_params)
     train_loader = DataLoader(dataset, batch_size=batch_size, num_workers=1, drop_last=True)
+    val_dataset = MelSpectrogramDataset(**val_dataset_params)
 
     if not os.path.isdir(save_dir):
         os.makedirs(save_dir)
         os.chmod(save_dir, 0o777)
         if not (verbose is None):
             verbose.print_string("Created save directory {}".format(save_dir))
+
+    samples_dir = save_dir + "/samples/"
+    if not os.path.isdir(samples_dir):
+        os.makedirs(samples_dir)
+        os.chmod(samples_dir, 0o777)
+        if not (verbose is None):
+            verbose.print_string("Created samples directory {}".format(samples_dir))
 
     if not (log_dir is None):
         if not os.path.isdir(log_dir):
@@ -220,13 +243,13 @@ def train_cycle(model, model_name, save_dir, criterion, dataset_params, n_epochs
             verbose=verbose)
         iter += 1
 
-    model.train()
-
     epoch_norm, epoch_loss = 0.0, 0.0
 
     for epoch in range(iter // len(train_loader), n_epochs):
         if not (verbose is None):
             verbose.print_string("Started epoch: {}".format(epoch))
+
+        model.train()
 
         for i, (mel, audio) in enumerate(train_loader):
             if iter == stop_iter_num:
@@ -245,11 +268,14 @@ def train_cycle(model, model_name, save_dir, criterion, dataset_params, n_epochs
 
             loss.backward()
 
+            if not (max_norm is None):
+                torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm)
+
             optimizer.step()
 
             if not (verbose is None):
                 if iter % batch_verbose_period == 0:
-                    verbose.print_string("iteration {} ({} of {} in epoch), loss:\t{:.8f}".format(
+                    verbose.print_string("iteration {} ({} of {} in epoch), loss: {:.8f}".format(
                         iter, i, len(train_loader), loss.item()))
 
             if iter % iter_checkpoint_hop == 0:
@@ -284,14 +310,37 @@ def train_cycle(model, model_name, save_dir, criterion, dataset_params, n_epochs
             writer.add_scalar('{}/epoch_grad_norm'.format(model_name), epoch_norm, epoch)
             writer.add_scalar('{}/epoch_loss'.format(model_name), epoch_loss, epoch)
 
+        model.eval()
+
+        epoch_samples_dir = samples_dir + "epoch_{}/".format(epoch)
+        if not os.path.isdir(epoch_samples_dir):
+            os.makedirs(epoch_samples_dir)
+            os.chmod(epoch_samples_dir, 0o777)
+            if not (verbose is None):
+                verbose.print_string("Created samples directory {} for epoch {}".format(epoch_samples_dir, epoch))
+
+        for val_iter in range(len(val_dataset)):
+            mel, audio = val_dataset[val_iter]
+            mel = mel.to(device).view(1, mel.shape[0], mel.shape[1])
+
+            est_audio = model.infer(mel, sigma=val_sigma).squeeze(0)
+
+            audio, est_audio = audio.to('cpu'), est_audio.to('cpu')
+
+            write(epoch_samples_dir + "inference_{}.wav".format(val_iter), val_dataset_params['sr'],
+                  est_audio.clamp(-1, 1).numpy())
+            write(epoch_samples_dir + "ground_truth_{}.wav".format(val_iter), val_dataset_params['sr'],
+                  audio.clamp(-1, 1).numpy())
+
         if iter == stop_iter_num:
             break
 
-    model.eval()
     model.cpu()
 
     save_path = "{}/{}_final_model_state.ckpt".format(save_dir, model_name)
     torch.save(model.state_dict(), save_path)
+    save_path = "{}/{}_final_model.ckpt".format(save_dir, model_name)
+    torch.save(model, save_path)
 
     if not (log_dir is None):
         writer.export_scalars_to_json("{}/{}_training_information.json".format(log_dir, model_name))

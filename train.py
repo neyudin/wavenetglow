@@ -3,6 +3,8 @@ import argparse
 import json
 import train_cycle_utils
 import WaveGlow
+import torch.optim
+import torch.optim.lr_scheduler as lr_shed
 
 
 if __name__ == "__main__":
@@ -17,5 +19,5 @@ if __name__ == "__main__":
     model = WaveGlow.WaveGlow(**config['WaveGlow_params'])
 
     verbose = train_cycle_utils.VerboseStringPadding()
-
-    train_cycle_utils.train_cycle(model=model, verbose=verbose, **config['train_cycle_params'])
+    
+    train_cycle_utils.train_cycle(model=model, verbose=verbose, scheduler=lr_shed.MultiStepLR, **config['train_cycle_params'])
