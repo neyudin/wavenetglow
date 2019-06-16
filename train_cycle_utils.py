@@ -9,7 +9,36 @@ from tensorboardX import SummaryWriter
 DEFAULT_SCHED_PARAM_DICT = dict()
 
 
-def make_checkpoint(path, model, optimizer, lr, scheduler, iter, verbose=True):
+class VerboseStringPadding:
+    """Auxiliary tool for inline string printing
+
+    This class helps to print all messages upon each other.
+
+    Attributes
+    ----------
+    _prev_str_len : int >= 0 [scalar], default -- 0
+        Length of the previous printed string.
+    """
+    def __init__(self):
+        self._prev_str_len = 0
+
+    def print_string(self, string):
+        """Print string with whitespace padding.
+
+        Parameters
+        ----------
+        string : str
+            String to print.
+
+        """
+        mod_string = '\r' + string
+        n_chars = len(mod_string)
+        pad_len = max(self._prev_str_len - n_chars, 0)
+        self._prev_str_len = n_chars
+        print(mod_string + ' ' * pad_len, end='', flush=True)
+
+
+def make_checkpoint(path, model, optimizer, lr, scheduler, iter, verbose=None):
     """Saves intermediate state of the training procedure into file.
 
     Parameters
@@ -26,8 +55,8 @@ def make_checkpoint(path, model, optimizer, lr, scheduler, iter, verbose=True):
         Optimizer's learning rate scheduler.
     iter : int >= 0 [scalar]
         Number of the current iteration.
-    verbose : bool, default -- True
-        Whether print auxiliary output.
+    verbose : printing class, default -- None
+        Class with method .print_string(string) to print string.
 
     """
     torch.save({'model': model.state_dict(),
@@ -37,11 +66,11 @@ def make_checkpoint(path, model, optimizer, lr, scheduler, iter, verbose=True):
                 'iter': iter
                 }, path)
 
-    if verbose:
-        print("Saved model state at iteration {} as {}".format(iter, path))
+    if not (verbose is None):
+        verbose.print_string("Saved model state at iteration {} as {}".format(iter, path))
 
 
-def load_checkpoint(path, model, optimizer, scheduler, verbose=True):
+def load_checkpoint(path, model, optimizer, scheduler, verbose=None):
     """Loads intermediate state of the training procedure from file.
 
     Parameters
@@ -54,8 +83,8 @@ def load_checkpoint(path, model, optimizer, scheduler, verbose=True):
         Model optimizer.
     scheduler : Pytorch LRScheduler
         Optimizer's learning rate scheduler.
-    verbose : bool, default -- True
-        Whether print auxiliary output.
+    verbose : printing class, default -- None
+        Class with method .print_string(string) to print string.
 
     Returns
     -------
@@ -86,15 +115,16 @@ def load_checkpoint(path, model, optimizer, scheduler, verbose=True):
 
     iter = param_dict['iter']
 
-    if verbose:
-        print("Loaded checkpoint {} at iteration {}" .format(path, iter))
+    if not (verbose is None):
+        verbose.print_string("Loaded checkpoint {} at iteration {}" .format(path, iter))
     return model, optimizer, scheduler, iter, lr
 
 
-def train_cycle(model, model_name, save_dir, criterion, dataset_params, n_epochs, batch_size=3,
-                optimizer=None, lr=1e-4, scheduler=None, scheduler_state_dict=DEFAULT_SCHED_PARAM_DICT,
-                device='cpu', seed=42, checkpoint_path=None, iter_checkpoint_hop=2000, verbose=True,
-                log_dir=None, exp_smooth_val=0.5):
+def train_cycle(model, model_name, save_dir, criterion, dataset_params, n_epochs,
+                stop_iter_num=580000, batch_size=24, sigma=1.0, optimizer=None, lr=1e-4,
+                scheduler=None, scheduler_state_dict=DEFAULT_SCHED_PARAM_DICT, device='cpu',
+                seed=42, checkpoint_path=None, iter_checkpoint_hop=2000, verbose=None,
+                batch_verbose_period=100, log_dir=None, exp_smooth_val=0.5):
     """Main training cycle.
 
     Parameters
@@ -113,14 +143,18 @@ def train_cycle(model, model_name, save_dir, criterion, dataset_params, n_epochs
         `max_wav_val`.
     n_epochs : int > 0 [scalar]
         Number of the training epochs.
-    batch_size : int > 0 [scalar], default -- 3
+    stop_iter_num : int > 0 [scalar], default -- 580000
+        Maximal number of the iteration.
+    batch_size : int > 0 [scalar], default -- 24
         Size of the batch.
+    sigma : float > 0 [scalar], default -- 1.0
+        Standard deviation for Normal distribution.
     optimizer : Pytorch Optimizer, default -- None
         Model optimizer. If optimizer == None, then Adam optimizer is used.
     lr : float > 0 [scalar], default -- 1e-4
         Learning rate.
     scheduler : Pytorch LRScheduler, default -- None
-        Optimizer's learning rate scheduler. If scheduler == None, then no scheduling.
+        Optimizer's learning rate scheduler class reference. If scheduler == None, then no scheduling.
     scheduler_state_dict : dict, default -- dict()
         Pytorch LRScheduler parameters dictionary.
     device : str, default -- 'cpu'
@@ -132,11 +166,13 @@ def train_cycle(model, model_name, save_dir, criterion, dataset_params, n_epochs
         initial state won't be downloaded from the file.
     iter_checkpoint_hop : int > 0 [scalar], default -- 2000
         Period length between savings of the model's states.
-    verbose : bool, default -- True
-        Whether print auxiliary messages to stdout.
+    verbose : printing class, default -- None
+        Class with method .print_string(string) to print string.
+    batch_verbose_period : int, default -- 100
+        Period length between printing model's loss.
     log_dir : str, default -- None
         Path to the directory to store TensorBoard logs.
-        If log_dir == None,then TensorBoard won't be used.
+        If log_dir == None, then TensorBoard won't be used.
     exp_smooth_val : float between 0 and 1, default -- 0.5
         Exponential smoothing parameter for epoch loss and gradient norm estimation.
 
@@ -155,15 +191,15 @@ def train_cycle(model, model_name, save_dir, criterion, dataset_params, n_epochs
     if not os.path.isdir(save_dir):
         os.makedirs(save_dir)
         os.chmod(save_dir, 0o777)
-        if verbose:
-            print("Created save directory", save_dir)
+        if not (verbose is None):
+            verbose.print_string("Created save directory {}".format(save_dir))
 
     if not (log_dir is None):
         if not os.path.isdir(log_dir):
             os.makedirs(log_dir)
             os.chmod(log_dir, 0o777)
-            if verbose:
-                print("Created log directory", log_dir)
+            if not (verbose is None):
+                verbose.print_string("Created log directory {}".format(log_dir))
         writer = SummaryWriter(log_dir=log_dir)
 
     model = model.to(device)
@@ -185,27 +221,36 @@ def train_cycle(model, model_name, save_dir, criterion, dataset_params, n_epochs
         iter += 1
 
     model.train()
+
+    epoch_norm, epoch_loss = 0.0, 0.0
+
     for epoch in range(iter // len(train_loader), n_epochs):
-        if verbose:
-            print("Started epoch: {}".format(epoch))
+        if not (verbose is None):
+            verbose.print_string("Started epoch: {}".format(epoch))
 
-        if not (log_dir is None):
-            epoch_norm, epoch_loss = 0.0, 0.0
+        for i, (mel, audio) in enumerate(train_loader):
+            if iter == stop_iter_num:
+                break
 
-        for mel, audio in train_loader:
             mel, audio = mel.to(device), audio.to(device)
 
             model.zero_grad()
 
             out = model(audio, mel)
 
-            loss = criterion(out)
+            if criterion is None:
+                loss = model.compute_loss(audio, mel, sigma=sigma)
+            else:
+                loss = criterion(out)
+
             loss.backward()
 
             optimizer.step()
 
-            if verbose:
-                print("    iteration {}:\t{:.8f}".format(iter, loss.item()))
+            if not (verbose is None):
+                if iter % batch_verbose_period == 0:
+                    verbose.print_string("iteration {} ({} of {} in epoch), loss:\t{:.8f}".format(
+                        iter, i, len(train_loader), loss.item()))
 
             if iter % iter_checkpoint_hop == 0:
                 save_path = "{}/{}_{}.ckpt".format(save_dir, model_name, iter)
@@ -217,16 +262,16 @@ def train_cycle(model, model_name, save_dir, criterion, dataset_params, n_epochs
                                 iter=iter,
                                 verbose=verbose)
 
+            total_norm = 0.0
+            for p in model.parameters():
+                param_norm = p.grad.data.norm(2)
+                total_norm += param_norm.item() ** 2
+            total_norm **= 0.5
+
+            epoch_norm = (1 - exp_smooth_val) * epoch_norm + exp_smooth_val * total_norm
+            epoch_loss = (1 - exp_smooth_val) * epoch_loss + exp_smooth_val * loss.item()
+
             if not (log_dir is None):
-                total_norm = 0.0
-                for p in model.parameters():
-                    param_norm = p.grad.data.norm(2)
-                    total_norm += param_norm.item() ** 2
-                total_norm **= 0.5
-
-                epoch_norm = (1 - exp_smooth_val) * epoch_norm + exp_smooth_val * total_norm
-                epoch_loss = (1 - exp_smooth_val) * epoch_loss + exp_smooth_val * loss.item()
-
                 writer.add_scalar('{}/iter_grad_norm'.format(model_name), total_norm, iter)
                 writer.add_scalar('{}/iter_loss'.format(model_name), loss.item(), iter)
 
@@ -239,6 +284,9 @@ def train_cycle(model, model_name, save_dir, criterion, dataset_params, n_epochs
             writer.add_scalar('{}/epoch_grad_norm'.format(model_name), epoch_norm, epoch)
             writer.add_scalar('{}/epoch_loss'.format(model_name), epoch_loss, epoch)
 
+        if iter == stop_iter_num:
+            break
+
     model.eval()
     model.cpu()
 
@@ -248,3 +296,5 @@ def train_cycle(model, model_name, save_dir, criterion, dataset_params, n_epochs
     if not (log_dir is None):
         writer.export_scalars_to_json("{}/{}_training_information.json".format(log_dir, model_name))
         writer.close()
+
+    print(flush=True)
