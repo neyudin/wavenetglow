@@ -1,0 +1,30 @@
+{
+    "WaveGlow_params": {
+        "num_channels": 8,
+        "early_channels": 2,
+        "early_every": 4,
+        "mel_channels": 80,
+        "num_blocks": 12
+    },
+    "train_cycle_params": {
+        "log_dir": "./tmp/logs/",
+        "save_dir": "./tmp/checkpoints/",
+        "n_epochs": 100000,
+        "model_name": "WaveGlow",
+        "criterion": null,
+        "exp_smooth_val": 0.4,
+        "dataset_params": {
+            "shuffle": true,
+            "max_wav_val": 32768.0,
+            "fmin": 0.0,
+            "n_fft": 1024,
+            "fmax": 8000.0,
+            "sr": 22050,
+            "hop_len": 256,
+            "seed": 42,
+            "win_len": 1024,
+            "data_dir": "../data/LJSpeech-1.1/wavs/",
+            "seg_len": 16000
+        }
+    }
+}
