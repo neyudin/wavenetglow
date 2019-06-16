@@ -7,8 +7,8 @@ class WN(torch.nn.Module):
     WN block for affine coupling layer. Actual version
     """
     
-    def __init__(self, num_channels, mel_channels, n_layers=4, residual_channels=128, 
-                 gate_channels=64, skip_channels=64):
+    def __init__(self, num_channels, mel_channels, n_layers=8, residual_channels=512, 
+                 gate_channels=256, skip_channels=256):
         """
         Parameters
         ----------
@@ -88,8 +88,8 @@ class WN(torch.nn.Module):
             out_channels=2 * num_channels, #log s, t
             kernel_size=1)
         
-        self.conv_out.weight.data.uniform_(-0.001, 0.001)
-        self.conv_out.bias.data.uniform_(-0.001, 0.001)
+        self.conv_out.weight.data.uniform_(-0.0001, 0.0001)
+        self.conv_out.bias.data.uniform_(-0.0001, 0.0001)
         
     def forward(self, x_a, c):
         """

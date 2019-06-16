@@ -4,7 +4,11 @@
         "early_channels": 2,
         "early_every": 4,
         "mel_channels": 80,
-        "num_blocks": 12
+        "num_blocks": 12,
+        "n_layers": 4,
+        "residual_channels": 128,
+        "gate_channels": 64,
+        "skip_channels": 64
     },
     "train_cycle_params": {
         "log_dir": "./tmp/logs/",
@@ -16,9 +20,9 @@
         "exp_smooth_val": 0.4,
         "batch_size": 24,
         "iter_checkpoint_hop": 1000,
-        "lr": 0.001,
+        "lr": 0.0001,
         "scheduler_state_dict": {
-            "milestones": [2, 24],
+            "milestones": [336, 672],
             "gamma": 0.1
         },
         "max_norm": 100.0,
