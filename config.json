@@ -52,6 +52,7 @@
             "data_dir": "./data/LJSpeech-1.1/wavs/val/",
             "seg_len": -1
         },
-        "val_sigma": 0.6
+        "val_sigma": 0.6,
+        "checkpoint_path": null
     }
 }

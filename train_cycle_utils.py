@@ -322,7 +322,8 @@ def train_cycle(model, model_name, save_dir, criterion, dataset_params, val_data
             mel, audio = val_dataset[val_iter]
             mel = mel.to(device).view(1, mel.shape[0], mel.shape[1])
 
-            est_audio = model.infer(mel, sigma=val_sigma).squeeze(0)
+            with torch.no_grad():
+                est_audio = model.infer(mel, sigma=val_sigma).squeeze(0)
 
             audio, est_audio = audio.to('cpu'), est_audio.to('cpu')
 
