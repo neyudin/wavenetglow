@@ -22,8 +22,8 @@
         "iter_checkpoint_hop": 1000,
         "lr": 0.0001,
         "scheduler_state_dict": {
-            "milestones": [336, 672],
-            "gamma": 0.1
+            "milestones": [14, 42, 98, 210],
+            "gamma": 0.5
         },
         "max_norm": 500.0,
         "dataset_params": {

@@ -249,6 +249,10 @@ def train_cycle(model, model_name, save_dir, criterion, dataset_params, val_data
         if not (verbose is None):
             verbose.print_string("Started epoch: {}".format(epoch))
 
+        if not (scheduler is None):
+            scheduler.step(epoch)
+            verbose.print_string("Epoch lr: {}".format(scheduler.get_lr()))
+
         model.train()
 
         for i, (mel, audio) in enumerate(train_loader):
@@ -301,9 +305,6 @@ def train_cycle(model, model_name, save_dir, criterion, dataset_params, val_data
                 writer.add_scalar('{}/iter_loss'.format(model_name), loss.item(), iter)
 
             iter += 1
-
-        if not (scheduler is None):
-            scheduler.step()
 
         if not (log_dir is None):
             writer.add_scalar('{}/epoch_grad_norm'.format(model_name), epoch_norm, epoch)
