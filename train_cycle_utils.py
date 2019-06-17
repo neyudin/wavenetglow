@@ -40,7 +40,7 @@ class VerboseStringPadding:
         print(mod_string + ' ' * pad_len, end='', flush=True)
 
 
-def make_checkpoint(path, model, optimizer, lr, scheduler, iter, verbose=None):
+def make_checkpoint(path, model, optimizer, lr, scheduler, iteration, verbose=None):
     """Saves intermediate state of the training procedure into file.
 
     Parameters
@@ -55,7 +55,7 @@ def make_checkpoint(path, model, optimizer, lr, scheduler, iter, verbose=None):
         Optimizer's learning rate.
     scheduler : Pytorch LRScheduler
         Optimizer's learning rate scheduler.
-    iter : int >= 0 [scalar]
+    iteration : int >= 0 [scalar]
         Number of the current iteration.
     verbose : printing class, default -- None
         Class with method .print_string(string) to print string.
@@ -66,11 +66,11 @@ def make_checkpoint(path, model, optimizer, lr, scheduler, iter, verbose=None):
                 'optimizer': optimizer.state_dict(),
                 'lr': lr,
                 'scheduler': scheduler if scheduler is None else scheduler.state_dict(),
-                'iter': iter
+                'iter': iteration
                 }, path)
 
     if not (verbose is None):
-        verbose.print_string("Saved model state at iteration {} as {}".format(iter, path))
+        verbose.print_string("Saved model state at iteration {} as {}".format(iteration, path))
 
 
 def load_checkpoint(path, model, optimizer, scheduler, verbose=None):
@@ -97,7 +97,7 @@ def load_checkpoint(path, model, optimizer, scheduler, verbose=None):
         Updated model optimizer.
     scheduler : Pytorch LRScheduler
         Updated optimizer's learning rate scheduler.
-    iter : int >= 0 [scalar]
+    iteration : int >= 0 [scalar]
         Number of the current iteration.
     lr : float > 0 [scalar]
         Updated optimizer's learning rate.
@@ -120,11 +120,11 @@ def load_checkpoint(path, model, optimizer, scheduler, verbose=None):
     else:
         scheduler.load_state_dict(param_dict['scheduler'])
 
-    iter = param_dict['iter']
+    iteration = param_dict['iter']
 
     if not (verbose is None):
-        verbose.print_string("Loaded checkpoint {} at iteration {}" .format(path, iter))
-    return model, optimizer, scheduler, iter, lr
+        verbose.print_string("Loaded checkpoint {} at iteration {}" .format(path, iteration))
+    return model, optimizer, scheduler, iteration, lr
 
 
 def train_cycle(model, model_name, save_dir, criterion, dataset_params, val_dataset_params, n_epochs,
@@ -233,19 +233,19 @@ def train_cycle(model, model_name, save_dir, criterion, dataset_params, val_data
     if not (scheduler is None):
         scheduler = scheduler(optimizer, **scheduler_state_dict)
 
-    iter = 0
+    iteration = 0
     if not (checkpoint_path is None):
-        model, optimizer, scheduler, iter, lr = load_checkpoint(
+        model, optimizer, scheduler, iteration, lr = load_checkpoint(
             path=checkpoint_path,
             model=model,
             optimizer=optimizer,
             scheduler=scheduler,
             verbose=verbose)
-        iter += 1
+        iteration += 1
 
     epoch_norm, epoch_loss = 0.0, 0.0
 
-    for epoch in range(iter // len(train_loader), n_epochs):
+    for epoch in range(iteration // len(train_loader), n_epochs):
         if not (verbose is None):
             verbose.print_string("Started epoch: {}".format(epoch))
 
@@ -256,7 +256,7 @@ def train_cycle(model, model_name, save_dir, criterion, dataset_params, val_data
         model.train()
 
         for i, (mel, audio) in enumerate(train_loader):
-            if iter == stop_iter_num:
+            if iteration == stop_iter_num:
                 break
 
             mel, audio = mel.to(device), audio.to(device)
@@ -277,18 +277,18 @@ def train_cycle(model, model_name, save_dir, criterion, dataset_params, val_data
             optimizer.step()
 
             if not (verbose is None):
-                if iter % batch_verbose_period == 0:
+                if iteration % batch_verbose_period == 0:
                     verbose.print_string("iteration {} ({} of {} in epoch), loss: {:.8f}".format(
-                        iter, i, len(train_loader), loss.item()))
+                        iteration, i, len(train_loader), loss.item()))
 
-            if iter % iter_checkpoint_hop == 0:
-                save_path = "{}/{}_{}.ckpt".format(save_dir, model_name, iter)
+            if iteration % iter_checkpoint_hop == 0:
+                save_path = "{}/{}_{}.ckpt".format(save_dir, model_name, iteration)
                 make_checkpoint(path=save_path,
                                 model=model,
                                 optimizer=optimizer,
                                 lr=lr,
                                 scheduler=scheduler,
-                                iter=iter,
+                                iteration=iteration,
                                 verbose=verbose)
 
             total_norm = 0.0
@@ -301,10 +301,10 @@ def train_cycle(model, model_name, save_dir, criterion, dataset_params, val_data
             epoch_loss = (1 - exp_smooth_val) * epoch_loss + exp_smooth_val * loss.item()
 
             if not (log_dir is None):
-                writer.add_scalar('{}/iter_grad_norm'.format(model_name), total_norm, iter)
-                writer.add_scalar('{}/iter_loss'.format(model_name), loss.item(), iter)
+                writer.add_scalar('{}/iter_grad_norm'.format(model_name), total_norm, iteration)
+                writer.add_scalar('{}/iter_loss'.format(model_name), loss.item(), iteration)
 
-            iter += 1
+            iteration += 1
 
         if not (log_dir is None):
             writer.add_scalar('{}/epoch_grad_norm'.format(model_name), epoch_norm, epoch)
@@ -333,7 +333,7 @@ def train_cycle(model, model_name, save_dir, criterion, dataset_params, val_data
             write(epoch_samples_dir + "ground_truth_{}.wav".format(val_iter), val_dataset_params['sr'],
                   audio.clamp(-1, 1).numpy())
 
-        if iter == stop_iter_num:
+        if iteration == stop_iter_num:
             break
 
     model.cpu()

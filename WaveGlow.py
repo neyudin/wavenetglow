@@ -25,7 +25,8 @@ class InvertConv(nn.Module):
         """
         super(InvertConv, self).__init__()
         
-        self.conv = nn.Conv1d(in_channels=num_channels, out_channels=num_channels, kernel_size=1, stride=1, padding=0,
+        self.conv = nn.Conv1d(in_channels=num_channels, out_channels=num_channels, kernel_size=1,
+                              stride=1, padding=0,
                               bias=False)
         
         weight = torch.qr(torch.randn(num_channels, num_channels))[0]
@@ -51,7 +52,8 @@ class InvertConv(nn.Module):
         
         """
         if reverse:
-            return F.conv1d(x, weight=self.conv.weight.squeeze().inverse().unsqueeze(2), bias=None, stride=1, padding=0)
+            return F.conv1d(x, weight=self.conv.weight.squeeze().inverse().unsqueeze(2),
+                            bias=None, stride=1, padding=0)
         else:
             return self.conv(x), torch.logdet(self.conv.weight.squeeze()) * x.size(0) * x.size(2)
 
@@ -112,7 +114,8 @@ class WaveGlow(nn.Module):
     """
     WaveGlow network
     """
-    def __init__(self, num_blocks, num_channels, mel_channels, early_channels, early_every, **kwargs):
+    def __init__(self, num_blocks, num_channels, mel_channels, early_channels, early_every,
+                 **kwargs):
         """
         Parameters
         ----------
@@ -139,7 +142,8 @@ class WaveGlow(nn.Module):
         self.early_every = early_every
         
         # spect upsampling
-        self.spect_upsample = nn.ConvTranspose1d(in_channels=self.mel_channels, out_channels=self.mel_channels,
+        self.spect_upsample = nn.ConvTranspose1d(in_channels=self.mel_channels,
+                                                 out_channels=self.mel_channels,
                                                  kernel_size=1024, stride=256)
         
         # blocks
@@ -150,8 +154,9 @@ class WaveGlow(nn.Module):
             if i > 0 and i % self.early_every == 0:
                 remaining_channels -= self.early_channels
             self.invert_conv.append(InvertConv(remaining_channels))
-            self.affine_coupling.append(AffineCouplingLayer(num_channels=remaining_channels // 2,
-                                                            mel_channels=self.mel_channels * self.num_channels, **kwargs))
+            self.affine_coupling.append(AffineCouplingLayer(
+                num_channels=remaining_channels // 2,
+                mel_channels=self.mel_channels * self.num_channels, **kwargs))
         self.num_channels_last = remaining_channels
 
     def forward(self, x, spect):
@@ -178,7 +183,8 @@ class WaveGlow(nn.Module):
         
         # reshape tensors
         x = x.unfold(dimension=1, size=self.num_channels, step=self.num_channels).permute(0, 2, 1)
-        spect = spect.unfold(dimension=2, size=self.num_channels, step=self.num_channels).permute(0, 2, 1, 3)
+        spect = spect.unfold(dimension=2, size=self.num_channels,
+                             step=self.num_channels).permute(0, 2, 1, 3)
         spect = spect.contiguous().view(spect.size(0), spect.size(1), -1).permute(0, 2, 1)
         
         # forward pass
@@ -204,7 +210,7 @@ class WaveGlow(nn.Module):
         spect : FloatTensor of size batch_size * mel_channels * mel_frames
             Mel-spectrogram
         sigma : float scalar
-            Standart deviation of latent variables
+            Standard deviation of latent variables
         
         Returns
         ----------
@@ -218,14 +224,16 @@ class WaveGlow(nn.Module):
         spect = spect.unfold(2, self.num_channels, self.num_channels).permute(0, 2, 1, 3)
         spect = spect.contiguous().view(spect.size(0), spect.size(1), -1).permute(0, 2, 1)
 
-        x = sigma * torch.randn(spect.size(0), self.num_channels_last, spect.size(2), device=spect.device)
+        x = sigma * torch.randn(spect.size(0), self.num_channels_last, spect.size(2),
+                                device=spect.device)
 
         for i in range(self.num_blocks - 1, -1, -1):
             x = self.affine_coupling[i](x, spect, reverse=True)
             x = self.invert_conv[i](x, reverse=True)
 
             if i > 0 and i % self.early_every == 0:
-                z = sigma * torch.randn(spect.size(0), self.early_channels, spect.size(2), device=spect.device)
+                z = sigma * torch.randn(spect.size(0), self.early_channels, spect.size(2),
+                                        device=spect.device)
                 x = torch.cat([z, x], dim=1)
 
         return x.permute(0, 2, 1).contiguous().view(x.size(0), -1).data
@@ -239,7 +247,7 @@ class WaveGlow(nn.Module):
         spect : FloatTensor of size batch_size * mel_channels * mel_frames
             Mel-spectrogram
         sigma : float scalar
-            Standart deviation of latent variables
+            Standard deviation of latent variables
         
         Returns
         ----------

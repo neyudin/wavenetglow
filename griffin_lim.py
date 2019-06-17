@@ -7,8 +7,9 @@ class GriffinLim:
     """
     GriffinLim algorithm
     """
-    def __init__(self, sample_rate=24000, num_frequencies=1025, frame_length=0.05, frame_shift=0.0125, mel_channels=80,
-                 min_frequency=50, max_frequency=12000, ref_db=20, min_db=-100, preemphasis=0.97, num_iter=20):
+    def __init__(self, sample_rate=24000, num_frequencies=1025, frame_length=0.05,
+                 frame_shift=0.0125, mel_channels=80, min_frequency=50, max_frequency=12000,
+                 ref_db=20, min_db=-100, preemphasis=0.97, num_iter=20):
         """
         Parameters
         ----------
@@ -32,8 +33,6 @@ class GriffinLim:
             Min db value
         preemphasis: float
             parameter for filter
-        power: float
-
         num_iter: int
             Number of iterations of the griffin_lim algorithm
 

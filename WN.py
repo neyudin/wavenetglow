@@ -28,8 +28,6 @@ class WN(torch.nn.Module):
             Number of filters and gates channels (default : 256)
         skip_channels : int
             Number of chanels used by skip connections
-        pre_channels : int
-            Number of channels in final non-linearity
         """
         super(WN, self).__init__()
         
@@ -85,7 +83,7 @@ class WN(torch.nn.Module):
         
         self.conv_out = nn.Conv1d(
             in_channels=skip_channels,
-            out_channels=2 * num_channels, #log s, t
+            out_channels=2 * num_channels,  # log s, t
             kernel_size=1)
         
         self.conv_out.weight.data.uniform_(-0.0001, 0.0001)
@@ -101,7 +99,7 @@ class WN(torch.nn.Module):
             Upsampled mel-spectrogram
         """
         
-        assert x_a.size(2) == c.size(2) #Проверить, что спектрограмме не забыли сделать upsampling
+        assert x_a.size(2) == c.size(2)  # Проверить, что спектрограмме не забыли сделать upsampling
         
         x_acc = 0
         x = self.conv_input(x_a)
