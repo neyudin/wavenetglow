@@ -13,13 +13,13 @@
 
 Для работы с реализацией модели WaveGlow необходимо выполнить следующие команды
 
-    ```command
+```
     git clone https://github.com/neyudin/wavenetglow.git
     cd wavenetglow
     git submodule init
     git submodule update
     pip install -r requirements.txt
-    ```
+```
 
 ## Обучение модели
 
@@ -29,15 +29,15 @@
 
 3. Запустить процесс командой:
 
-    ```
+```
     python train.py -c config.json
-    ```
+```
 
 Процесс обучения можно отслеживать с помощью Tensorboard, запустив команду (`<log_dir>` — директория, в которую сохраняются логи, параметр `log_dir` в [файле](./config.json) конфигурации, `<port_num>` — номер порта, по которому в браузере на `localhost` выводится информация о процессе обучения):
 
-    ```
+```
     tensorboard --logdir <log_dir> --port <port_num>
-    ```
+```
 
 ## Вывод в задаче Text-to-Speech с предобученными моделями
 
