@@ -1,0 +1,58 @@
+{
+    "WaveGlow_params": {
+        "num_channels": 8,
+        "early_channels": 2,
+        "early_every": 4,
+        "mel_channels": 80,
+        "num_blocks": 12,
+        "n_layers": 4,
+        "residual_channels": 128,
+        "gate_channels": 64,
+        "skip_channels": 64
+    },
+    "train_cycle_params": {
+        "log_dir": "./tmp/logs/",
+        "save_dir": "./tmp/checkpoints/",
+        "n_epochs": 100000,
+        "model_name": "WaveGlow",
+        "criterion": null,
+        "device": "cuda",
+        "exp_smooth_val": 0.4,
+        "batch_size": 24,
+        "iter_checkpoint_hop": 1000,
+        "lr": 0.0001,
+        "scheduler_state_dict": {
+            "milestones": [14, 42, 98, 210],
+            "gamma": 0.5
+        },
+        "max_norm": 500.0,
+        "dataset_params": {
+            "shuffle": true,
+            "max_wav_val": 32768.0,
+            "fmin": 0.0,
+            "n_fft": 1024,
+            "fmax": 8000.0,
+            "sr": 22050,
+            "hop_len": 256,
+            "seed": 42,
+            "win_len": 1024,
+            "data_dir": "./data/LJSpeech-1.1/wavs/train/",
+            "seg_len": 16000
+        },
+        "val_dataset_params": {
+            "shuffle": false,
+            "max_wav_val": 32768.0,
+            "fmin": 0.0,
+            "n_fft": 1024,
+            "fmax": 8000.0,
+            "sr": 22050,
+            "hop_len": 256,
+            "seed": 42,
+            "win_len": 1024,
+            "data_dir": "./data/LJSpeech-1.1/wavs/val/",
+            "seg_len": -1
+        },
+        "val_sigma": 0.6,
+        "checkpoint_path": null
+    }
+}

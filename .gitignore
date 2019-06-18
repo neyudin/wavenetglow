@@ -1,0 +1,10 @@
+_pycache__/
+*.py[cod]
+*$py.class
+.so
+.ipynb_checkpoints
+.idea
+data/
+*.html
+tmp/
+*.zip
