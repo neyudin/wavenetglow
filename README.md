@@ -1,17 +1,17 @@
-# wavenetglow
-Основной репозиторий по проекту в рамках курса "Современные методы распознавания и синтеза речи". Реализация [WaveGlow](https://arxiv.org/abs/1811.00002).
+# WaveGlow
+Unofficial implementation of the [WaveGlow](https://arxiv.org/abs/1811.00002) model.
 
-## Участники проекта
+## Project participants
 
-* [Масляков Глеб](https://github.com/glebmaslyak)
+* [Gleb Maslyakov](https://github.com/glebmaslyak)
 
-* [Николаев Сергей](https://github.com/corvin28)
+* [Sergey Nikolaev](https://github.com/corvin28)
 
-* [Юдин Никита](https://github.com/neyudin)
+* [Nikita Yudin](https://github.com/neyudin)
 
-## Подготовка к работе
+## Preliminary settings
 
-Для работы с реализацией модели WaveGlow необходимо выполнить следующие команды
+Clone this repository and initialize submodule, install project requirements:
 
 ```
     git clone https://github.com/neyudin/wavenetglow.git
@@ -21,28 +21,28 @@
     pip install -r requirements.txt
 ```
 
-## Обучение модели
+## Train the model
 
-1. Загрузить [выборку](https://mega.nz/#!OPwTQKCQ!cJAcqPS9hn705MeeI6JwRGPEtz39kjjGySGv2IN4xNE) и распаковать её в корне данного репозитория.
+1. Download [LJ Speech dataset](https://mega.nz/#!OPwTQKCQ!cJAcqPS9hn705MeeI6JwRGPEtz39kjjGySGv2IN4xNE) and unpack it to repository root.
 
-2. Настроить конфигурацию обучения модели в [файле](./config.json).
+2. Set training configuration in [file](./config.json).
 
-3. Запустить процесс командой:
+3. Start training process:
 
 ```
     python train.py -c config.json
 ```
 
-Процесс обучения можно отслеживать с помощью Tensorboard, запустив команду (`<log_dir>` — директория, в которую сохраняются логи, параметр `log_dir` в [файле](./config.json) конфигурации, `<port_num>` — номер порта, по которому в браузере на `localhost` выводится информация о процессе обучения):
+The whole training process can be monitored via Tensorboard while executing the following command (`<log_dir>` — directory with saved logs for Tensorboard, `log_dir` parameter in configuration [file](./config.json) stands for it, `<port_num>` — port number to watch training information via `http://localhost:<port_num>`):
 
 ```
     tensorboard --logdir <log_dir> --port <port_num>
 ```
 
-## Вывод в задаче Text-to-Speech с предобученными моделями
+## Text-to-Speech inference with pretrained models
 
-1. Загрузить предобученную модель по [ссылке](https://mega.nz/#!CWpAiAQZ!CZuZ0rgTttqPKe3wrmH7_Cj9Neb0bvlYMrieKTXlKkw) или обучить на [данных](https://mega.nz/#!OPwTQKCQ!cJAcqPS9hn705MeeI6JwRGPEtz39kjjGySGv2IN4xNE).
+1. Download pretrained [model](https://mega.nz/#!CWpAiAQZ!CZuZ0rgTttqPKe3wrmH7_Cj9Neb0bvlYMrieKTXlKkw) or train it from scratch on [data](https://mega.nz/#!OPwTQKCQ!cJAcqPS9hn705MeeI6JwRGPEtz39kjjGySGv2IN4xNE).
 
-2. Загрузить предобученную модель Tacotron2 по [ссылке](https://drive.google.com/file/d/1c5ZTuT7J08wLUoVZ2KkUs_VdZuJ86ZqA/view).
+2. Download pretrained Tacotron2 [model](https://drive.google.com/file/d/1c5ZTuT7J08wLUoVZ2KkUs_VdZuJ86ZqA/view).
 
-3. Запустить демонстрационную версию в [ноутбуке](./inference.ipynb).
+3. Run inference demo in [notebook](./inference.ipynb).

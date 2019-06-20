@@ -8,3 +8,5 @@ data/
 *.html
 tmp/
 *.zip
+tacotron2*
+WaveGlow*
