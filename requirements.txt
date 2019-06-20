@@ -28,3 +28,5 @@ torch
 torchfile==0.1.0
 torchnet==0.0.4
 torchvision==0.2.1
+inflect
+unidecode
