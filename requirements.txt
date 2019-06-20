@@ -11,11 +11,9 @@ jupyter-core==4.4.0
 librosa==0.6.3
 Markdown==3.0.1
 MarkupSafe==1.1.0
-#nb-conda==2.2.1
-#nb-conda-kernels==2.2.0
 nbconvert==5.3.1
 nbformat==4.4.0
-notebook==5.7.2
+notebook>=5.7.8
 numpy==1.16.2
 scikit-learn==0.20.3
 scipy==1.2.1
