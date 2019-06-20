@@ -1,5 +1,5 @@
 # WaveGlow
-Unofficial implementation of the [WaveGlow](https://arxiv.org/abs/1811.00002) model.
+Unofficial implementation of [WaveGlow](https://arxiv.org/abs/1811.00002) model.
 
 ## Project participants
 
@@ -39,9 +39,9 @@ The whole training process can be monitored via Tensorboard while executing the 
     tensorboard --logdir <log_dir> --port <port_num>
 ```
 
-## Text-to-Speech inference with pretrained models
+## Text-to-Speech inference with pretrained Tacotron2 model
 
-1. Download pretrained [model](https://mega.nz/#!CWpAiAQZ!CZuZ0rgTttqPKe3wrmH7_Cj9Neb0bvlYMrieKTXlKkw) or train it from scratch on [data](https://mega.nz/#!OPwTQKCQ!cJAcqPS9hn705MeeI6JwRGPEtz39kjjGySGv2IN4xNE).
+1. Train WaveGlow model from scratch on [data](https://mega.nz/#!OPwTQKCQ!cJAcqPS9hn705MeeI6JwRGPEtz39kjjGySGv2IN4xNE).
 
 2. Download pretrained Tacotron2 [model](https://drive.google.com/file/d/1c5ZTuT7J08wLUoVZ2KkUs_VdZuJ86ZqA/view).
 
