@@ -5,10 +5,10 @@
         "early_every": 4,
         "mel_channels": 80,
         "num_blocks": 12,
-        "n_layers": 4,
-        "residual_channels": 128,
-        "gate_channels": 64,
-        "skip_channels": 64
+        "n_layers": 8,
+        "residual_channels": 160,
+        "gate_channels": 80,
+        "skip_channels": 80
     },
     "train_cycle_params": {
         "log_dir": "./tmp/logs/",
@@ -18,14 +18,14 @@
         "criterion": null,
         "device": "cuda",
         "exp_smooth_val": 0.4,
-        "batch_size": 24,
+        "batch_size": 12,
         "iter_checkpoint_hop": 1000,
         "lr": 0.0001,
         "scheduler_state_dict": {
-            "milestones": [14, 42, 98, 210],
+            "milestones": [30, 60, 70, 80, 90, 100, 150, 200],
             "gamma": 0.5
         },
-        "max_norm": 500.0,
+        "max_norm": 1e4,
         "dataset_params": {
             "shuffle": true,
             "max_wav_val": 32768.0,
@@ -53,6 +53,6 @@
             "seg_len": -1
         },
         "val_sigma": 0.6,
-        "checkpoint_path": null
+        "checkpoint_path": "./tmp/checkpoints/WaveGlow_68000.ckpt"
     }
 }

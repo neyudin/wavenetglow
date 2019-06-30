@@ -137,7 +137,9 @@ class MelSpectrogramDataset(data.Dataset):
             Maximal amplitude of the .wav audio, used to map signal to [-1, 1] range.
 
         """
-        self.paths = get_wav_list(data_dir)
+        self.seed = seed
+        np.random.seed(self.seed)
+        self.paths = sorted(get_wav_list(data_dir))
         self.sr = sr
         self.n_fft = n_fft
         self.fmin = fmin
@@ -145,11 +147,9 @@ class MelSpectrogramDataset(data.Dataset):
         self.hop_len = hop_len
         self.win_len = win_len
         self.seg_len = seg_len
-        self.seed = seed
         self.shuffle = shuffle
         self.max_wav_val = max_wav_val
 
-        np.random.seed(self.seed)
         if self.shuffle:
             np.random.shuffle(self.paths)
 
