@@ -1,5 +1,5 @@
 ipykernel==5.1.0
-ipython==7.16.3
+ipython==8.10.0
 ipython-genutils==0.2.0
 ipywidgets==7.4.2
 JsonForm==0.0.2
